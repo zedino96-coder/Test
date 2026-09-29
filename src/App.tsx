@@ -15,6 +15,8 @@ import { NewAssetModal } from './components/NewAssetModal';
 import { UploadModal } from './components/UploadModal';
 import { UserUploadModal } from './components/UserUploadModal';
 import { ReturnConfirmModal } from './components/ReturnConfirmModal';
+import { EquipmentDetailModal } from './components/EquipmentDetailModal';
+import { ProductionView } from './components/ProductionView';
 import { 
   loadStoredAssets, 
   saveAssets, 
@@ -26,6 +28,8 @@ import {
   saveCategories,
   loadStoredBrands,
   saveBrands,
+  loadStoredProductionProfiles,
+  saveProductionProfiles,
   resetToFactorySimulation 
 } from './utils/storage';
 import { 
@@ -34,7 +38,8 @@ import {
   AssetCategory, 
   CategoryStockSummary, 
   AssetHistoryEvent,
-  BRAND_CONSTRAINTS
+  BRAND_CONSTRAINTS,
+  ProductionProfile
 } from './types/inventory';
 import { CheckCircle2, RotateCcw } from 'lucide-react';
 
@@ -44,13 +49,20 @@ export default function App() {
   const [history, setHistory] = useState<AssetHistoryEvent[]>(() => loadStoredHistory());
   const [categories, setCategories] = useState<string[]>(() => loadStoredCategories());
   const [brands, setBrands] = useState<Record<string, string[]>>(() => loadStoredBrands());
+  const [productionProfiles, setProductionProfiles] = useState<ProductionProfile[]>(() => loadStoredProductionProfiles());
 
-  // Active Tab: overview, equipment, users_manage (directory), phones (phone numbers), inventory, history (audit)
-  const [activeTab, setActiveTab] = useState<'overview' | 'equipment' | 'users_manage' | 'phones' | 'inventory' | 'history'>('overview');
+  // Active Tab: overview, equipment, production, users_manage (directory), phones (phone numbers), inventory, history (audit)
+  const [activeTab, setActiveTab] = useState<'overview' | 'equipment' | 'production' | 'users_manage' | 'phones' | 'inventory' | 'history'>('overview');
+  
+  // Honeywell scanner assets filter for production lines
+  const honeywellAssets = useMemo(() => {
+    return assets.filter((a) => a.category === 'Honeywell Scanner' || a.brand === 'Honeywell');
+  }, [assets]);
   
   // Modals
   const [selectedUserForModal, setSelectedUserForModal] = useState<User | null>(null);
   const [selectedAssetForHistory, setSelectedAssetForHistory] = useState<Asset | null>(null);
+  const [selectedAssetForCard, setSelectedAssetForCard] = useState<Asset | null>(null);
   const [historyEventToEdit, setHistoryEventToEdit] = useState<AssetHistoryEvent | null>(null);
   const [isEditHistoryModalOpen, setIsEditHistoryModalOpen] = useState(false);
   const [isCategoryBrandModalOpen, setIsCategoryBrandModalOpen] = useState(false);
@@ -272,6 +284,12 @@ export default function App() {
 
   // Operations: Add New Asset
   const handleAddAsset = (newAssetData: Omit<Asset, 'id' | 'updatedAt'>) => {
+    const snKey = newAssetData.serialNumber.toLowerCase().trim();
+    if (assets.some((a) => a.serialNumber.toLowerCase().trim() === snKey)) {
+      showToast(`Cannot register: Serial number "${newAssetData.serialNumber}" already exists in inventory!`);
+      return;
+    }
+
     const newAsset: Asset = {
       ...newAssetData,
       id: `ast-custom-${Date.now()}`,
@@ -303,6 +321,21 @@ export default function App() {
     saveAssets(nextAssets);
     saveHistory(nextHistory);
     showToast(`Registered new device: ${newAsset.brand} ${newAsset.model} (SN: ${newAsset.serialNumber})`);
+  };
+
+  // Operations: Update Asset Specifications (e.g. Honeywell network specs, notes)
+  const handleUpdateAsset = (updatedAsset: Asset) => {
+    const nextAssets = assets.map((a) => (a.id === updatedAsset.id ? updatedAsset : a));
+    setAssets(nextAssets);
+    saveAssets(nextAssets);
+    showToast(`Saved specifications for ${updatedAsset.brand} ${updatedAsset.model}`);
+  };
+
+  // Operations: Update Production Profiles
+  const handleUpdateProductionProfiles = (updated: ProductionProfile[]) => {
+    setProductionProfiles(updated);
+    saveProductionProfiles(updated);
+    showToast('Saved production floor profile changes');
   };
 
   // Operations: Batch Import Hardware Assets via CSV (Skips any existing serial number)
@@ -494,13 +527,14 @@ export default function App() {
 
   // Reset to Baseline
   const handleResetSimulation = () => {
-    const { assets: resetAssets, users: resetUsers, history: resetHistory } = resetToFactorySimulation();
+    const { assets: resetAssets, users: resetUsers, history: resetHistory, productionProfiles: resetProd } = resetToFactorySimulation();
     setAssets(resetAssets);
     setUsers(resetUsers);
     setHistory(resetHistory);
     setCategories(loadStoredCategories());
     setBrands(loadStoredBrands());
-    showToast('Reset inventory baseline: Lenovo laptops, Iiyama monitors, Logi keyboards/mice, iPhones, Honeywell scanners');
+    setProductionProfiles(resetProd);
+    showToast('Reset inventory baseline including Fixed Phone, Chip, Other and Production Floor profiles');
   };
 
   const handleFilterByCategoryInInventory = (cat: string) => {
@@ -560,6 +594,7 @@ export default function App() {
         summaries={summaries}
         categories={categories}
         brands={brands}
+        productionCount={productionProfiles.length}
         onOpenNewAssetModal={() => setIsNewAssetModalOpen(true)}
         onOpenCategoryBrandModal={() => setIsCategoryBrandModalOpen(true)}
         onResetSimulation={handleResetSimulation}
@@ -641,6 +676,7 @@ export default function App() {
             users={users}
             categories={categories}
             summaries={summaries}
+            history={history}
             onOpenUserModal={(u) => setSelectedUserForModal(u)}
             onOpenAssignModal={(cat, uId, aId) =>
               setAssignModalConfig({
@@ -660,6 +696,17 @@ export default function App() {
               setReturnConfirmTarget({ asset, user });
             }}
             onOpenCategoryBrandModal={() => setIsCategoryBrandModalOpen(true)}
+            onUpdateAsset={handleUpdateAsset}
+          />
+        )}
+
+        {/* Tab: Production Floor & Manufacturing Lines (10 profiles with Honeywell hardware) */}
+        {activeTab === 'production' && (
+          <ProductionView
+            productionProfiles={productionProfiles}
+            honeywellAssets={honeywellAssets}
+            onUpdateProfiles={handleUpdateProductionProfiles}
+            onOpenEquipmentCard={(asset) => setSelectedAssetForCard(asset)}
           />
         )}
 
@@ -738,6 +785,39 @@ export default function App() {
           onOpenEditEvent={(evt) => {
             setHistoryEventToEdit(evt);
             setIsEditHistoryModalOpen(true);
+          }}
+          onOpenEquipmentModal={(asset) => setSelectedAssetForCard(asset)}
+        />
+      )}
+
+      {/* Global Equipment Detail Card Modal */}
+      {selectedAssetForCard && (
+        <EquipmentDetailModal
+          asset={selectedAssetForCard}
+          users={users}
+          history={history}
+          onClose={() => setSelectedAssetForCard(null)}
+          onOpenUserModal={(u) => {
+            setSelectedAssetForCard(null);
+            setSelectedUserForModal(u);
+          }}
+          onOpenAssignModal={(cat, uId, aId) => {
+            setSelectedAssetForCard(null);
+            setAssignModalConfig({
+              isOpen: true,
+              defaultCategory: cat,
+              defaultUserId: uId,
+              defaultAssetId: aId,
+            });
+          }}
+          onRequestReturn={(asset, user) => {
+            setSelectedAssetForCard(null);
+            setReturnConfirmTarget({ asset, user });
+          }}
+          onUpdateAsset={handleUpdateAsset}
+          onOpenDeviceHistory={(asset) => {
+            setSelectedAssetForCard(null);
+            setSelectedAssetForHistory(asset);
           }}
         />
       )}

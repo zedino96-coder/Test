@@ -11,7 +11,11 @@ import {
   Users, 
   ArrowUpRight, 
   Filter, 
-  UserCheck 
+  UserCheck,
+  PhoneCall,
+  Cpu,
+  Box,
+  PieChart as PieChartIcon
 } from 'lucide-react';
 import { Asset, User, AssetCategory, CategoryStockSummary, ASSET_CATEGORIES } from '../types/inventory';
 
@@ -50,10 +54,16 @@ export const StockOverview: React.FC<StockOverviewProps> = ({
         return <Monitor className="w-4 h-4" />;
       case 'Phone':
         return <Smartphone className="w-4 h-4" />;
+      case 'Fixed Phone':
+        return <PhoneCall className="w-4 h-4 text-cyan-600" />;
+      case 'Chip':
+        return <Cpu className="w-4 h-4 text-emerald-600" />;
       case 'Honeywell Scanner':
-        return <Scan className="w-4 h-4" />;
+        return <Scan className="w-4 h-4 text-amber-600" />;
+      case 'Other':
+        return <Box className="w-4 h-4 text-slate-600" />;
       default:
-        return <Laptop className="w-4 h-4" />;
+        return <Box className="w-4 h-4" />;
     }
   };
 
@@ -135,6 +145,160 @@ export const StockOverview: React.FC<StockOverviewProps> = ({
           <div className="mt-2 text-2xs text-slate-500">
             Including John Miller (Lead Engineer)
           </div>
+        </div>
+      </div>
+
+      {/* DASHBOARD PIE CHART: Assigned vs In Stock Equipment Ratio */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-2xs">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+          
+          {/* Left: Summary text & Metrics */}
+          <div className="flex-1 w-full space-y-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
+                  <PieChartIcon className="w-4 h-4" />
+                </div>
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                  Equipment Allocation &amp; Stock Ratio (Pie Chart)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500">
+                Visualizing deployment status across all {totalAssets} corporate hardware units: active employee custody vs. stockroom buffer.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Assigned Legend Card */}
+              <div className="p-3.5 rounded-xl bg-blue-50/60 border border-blue-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="w-4 h-4 rounded-full bg-blue-600 shrink-0 shadow-xs" />
+                  <div>
+                    <span className="font-bold text-slate-900 text-xs block">Assigned to Staff</span>
+                    <span className="text-2xs text-slate-500">In employee custody</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="font-mono font-bold text-sm text-blue-700 block">{assignedAssets}</span>
+                  <span className="text-2xs font-semibold text-blue-600 font-mono">
+                    {totalAssets > 0 ? ((assignedAssets / totalAssets) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
+              </div>
+
+              {/* In Stock Legend Card */}
+              <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="w-4 h-4 rounded-full bg-emerald-500 shrink-0 shadow-xs" />
+                  <div>
+                    <span className="font-bold text-slate-900 text-xs block">In Stock / Available</span>
+                    <span className="text-2xs text-slate-500">Ready in IT stockroom</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="font-mono font-bold text-sm text-emerald-700 block">{inStockAssets}</span>
+                  <span className="text-2xs font-semibold text-emerald-600 font-mono">
+                    {totalAssets > 0 ? ((inStockAssets / totalAssets) * 100).toFixed(1) : 0}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Category Distribution Bar */}
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/80">
+              <div className="flex items-center justify-between text-2xs text-slate-600 mb-1.5 font-medium">
+                <span>Fleet Utilization Rate</span>
+                <span className="font-mono font-bold text-slate-900">
+                  {totalAssets > 0 ? Math.round((assignedAssets / totalAssets) * 100) : 0}% Deployed
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden flex">
+                <div 
+                  className="bg-blue-600 h-full transition-all" 
+                  style={{ width: `${totalAssets > 0 ? (assignedAssets / totalAssets) * 100 : 0}%` }}
+                  title={`Assigned: ${assignedAssets}`}
+                />
+                <div 
+                  className="bg-emerald-500 h-full transition-all" 
+                  style={{ width: `${totalAssets > 0 ? (inStockAssets / totalAssets) * 100 : 0}%` }}
+                  title={`In Stock: ${inStockAssets}`}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right: SVG Pie/Donut Chart */}
+          <div className="flex flex-col items-center justify-center p-2 shrink-0">
+            <div className="relative w-48 h-48 flex items-center justify-center">
+              <svg 
+                viewBox="0 0 160 160" 
+                className="w-full h-full -rotate-90 transform"
+              >
+                {/* Background track circle */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="58"
+                  className="stroke-slate-100"
+                  strokeWidth="20"
+                  fill="none"
+                />
+
+                {/* Assigned Segment (Blue) */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="58"
+                  stroke="#2563eb"
+                  strokeWidth="20"
+                  fill="none"
+                  strokeDasharray={`${totalAssets > 0 ? ((assignedAssets / totalAssets) * 364.425) : 0} 364.425`}
+                  strokeDashoffset="0"
+                  strokeLinecap="butt"
+                  className="transition-all duration-700 ease-out hover:opacity-90"
+                />
+
+                {/* In Stock Segment (Emerald) */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="58"
+                  stroke="#10b981"
+                  strokeWidth="20"
+                  fill="none"
+                  strokeDasharray={`${totalAssets > 0 ? ((inStockAssets / totalAssets) * 364.425) : 0} 364.425`}
+                  strokeDashoffset={`${totalAssets > 0 ? -((assignedAssets / totalAssets) * 364.425) : 0}`}
+                  strokeLinecap="butt"
+                  className="transition-all duration-700 ease-out hover:opacity-90"
+                />
+              </svg>
+
+              {/* Donut Center Display */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                <span className="text-2xl font-bold font-mono text-slate-900 tracking-tight">
+                  {totalAssets}
+                </span>
+                <span className="text-3xs uppercase tracking-wider font-bold text-slate-400">
+                  Total Units
+                </span>
+                <span className="text-3xs font-semibold text-blue-600 mt-0.5">
+                  {totalAssets > 0 ? Math.round((assignedAssets / totalAssets) * 100) : 0}% Active
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 mt-2 text-2xs">
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                <span>Assigned ({totalAssets > 0 ? Math.round((assignedAssets / totalAssets) * 100) : 0}%)</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <span>In Stock ({totalAssets > 0 ? Math.round((inStockAssets / totalAssets) * 100) : 0}%)</span>
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -262,8 +426,12 @@ export const StockOverview: React.FC<StockOverviewProps> = ({
                 <thead>
                   <tr className="bg-slate-100/70 border-b border-slate-200 text-slate-700 font-semibold">
                     <th className="py-2 px-3">Assignee</th>
-                    <th className="py-2 px-3 font-mono">Serial Number (sn)</th>
-                    <th className="py-2 px-3">Hardware Model</th>
+                    <th className="py-2 px-3 font-mono">
+                      {selectedCategory === 'Chip' ? 'Chip Number (Necessary)' : 'Serial Number (sn)'}
+                    </th>
+                    <th className="py-2 px-3">
+                      {selectedCategory === 'Chip' ? 'ID Number' : 'Hardware Model'}
+                    </th>
                     <th className="py-2 px-3 text-right">View</th>
                   </tr>
                 </thead>
@@ -306,13 +474,23 @@ export const StockOverview: React.FC<StockOverviewProps> = ({
                           )}
                         </td>
                         <td className="py-2 px-3 font-mono font-medium text-slate-800 tabular-nums">
-                          <span className="bg-slate-100 px-1.5 py-0.5 rounded text-2xs select-all">
+                          <span className={`px-1.5 py-0.5 rounded text-2xs select-all ${
+                            selectedCategory === 'Chip' ? 'bg-emerald-50 text-emerald-950 font-bold border border-emerald-200' : 'bg-slate-100'
+                          }`}>
                             {asset.serialNumber}
                           </span>
                         </td>
                         <td className="py-2 px-3 text-slate-600 truncate max-w-[140px]">
-                          <span className="font-medium text-slate-800">{asset.brand}</span>{' '}
-                          <span className="text-slate-500">{asset.model}</span>
+                          {selectedCategory === 'Chip' ? (
+                            <span className="font-mono text-2xs font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                              {asset.assetTag}
+                            </span>
+                          ) : (
+                            <>
+                              <span className="font-medium text-slate-800">{asset.brand}</span>{' '}
+                              <span className="text-slate-500">{asset.model}</span>
+                            </>
+                          )}
                         </td>
                         <td className="py-2 px-3 text-right">
                           {user && (
@@ -356,8 +534,12 @@ export const StockOverview: React.FC<StockOverviewProps> = ({
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-100/70 border-b border-slate-200 text-slate-700 font-semibold">
-                    <th className="py-2 px-3 font-mono">Serial Number (sn)</th>
-                    <th className="py-2 px-3">Hardware Model</th>
+                    <th className="py-2 px-3 font-mono">
+                      {selectedCategory === 'Chip' ? 'Chip Number (Necessary)' : 'Serial Number (sn)'}
+                    </th>
+                    <th className="py-2 px-3">
+                      {selectedCategory === 'Chip' ? 'ID Number' : 'Hardware Model'}
+                    </th>
                     <th className="py-2 px-3">Stock Location</th>
                     <th className="py-2 px-3 text-right">Action</th>
                   </tr>
@@ -366,13 +548,23 @@ export const StockOverview: React.FC<StockOverviewProps> = ({
                   {currentInStockAssets.map((asset) => (
                     <tr key={asset.id} className="hover:bg-slate-50 transition-colors">
                       <td className="py-2 px-3 font-mono font-medium text-slate-800 tabular-nums">
-                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-2xs select-all">
+                        <span className={`px-1.5 py-0.5 rounded text-2xs select-all ${
+                          selectedCategory === 'Chip' ? 'bg-emerald-50 text-emerald-950 font-bold border border-emerald-200' : 'bg-slate-100'
+                        }`}>
                           {asset.serialNumber}
                         </span>
                       </td>
                       <td className="py-2 px-3 text-slate-600 truncate max-w-[140px]">
-                        <span className="font-medium text-slate-800">{asset.brand}</span>{' '}
-                        <span className="text-slate-500">{asset.model}</span>
+                        {selectedCategory === 'Chip' ? (
+                          <span className="font-mono text-2xs font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                            {asset.assetTag}
+                          </span>
+                        ) : (
+                          <>
+                            <span className="font-medium text-slate-800">{asset.brand}</span>{' '}
+                            <span className="text-slate-500">{asset.model}</span>
+                          </>
+                        )}
                       </td>
                       <td className="py-2 px-3 text-slate-500 text-2xs truncate max-w-[120px]">
                         {asset.location}

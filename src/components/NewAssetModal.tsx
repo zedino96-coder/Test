@@ -51,11 +51,36 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
 
   if (!isOpen) return null;
 
+  const isChip = category === 'Chip';
   const allowedBrands = brands[category] || [];
   const isBrandRestricted = allowedBrands.length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isChip) {
+      if (!serialNumber.trim()) return; // Chip number is necessary
+
+      const assignedUser = status === 'assigned' ? users.find((u) => u.id === assignedUserId) : null;
+      onAddAsset({
+        category: 'Chip',
+        brand: brand.trim() || 'Chip',
+        model: 'Security Chip / Smart Token',
+        serialNumber: serialNumber.trim(), // Chip number
+        assetTag: assetTag.trim() || `ID-${serialNumber.trim()}`, // ID number
+        status,
+        lifecycleStatus: status === 'assigned' ? 'deployed' : lifecycleStatus,
+        assignedUserId: assignedUser ? assignedUser.id : null,
+        assignedUserName: assignedUser ? assignedUser.name : null,
+        assignedDate: assignedUser ? new Date().toISOString().split('T')[0] : null,
+        location: assignedUser ? assignedUser.deskLocation : location.trim() || 'Central IT Stockroom',
+        condition,
+        notes: notes.trim(),
+      });
+      onClose();
+      return;
+    }
+
     if (!serialNumber.trim() || !model.trim() || !brand.trim()) return;
 
     const assignedUser = status === 'assigned' ? users.find((u) => u.id === assignedUserId) : null;
@@ -158,48 +183,87 @@ export const NewAssetModal: React.FC<NewAssetModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                Model Name &amp; Spec *
-              </label>
-              <input
-                type="text"
-                required
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="e.g. ProLite XUB2792UHSU, ThinkPad T14s"
-                className="w-full py-1.5 px-2.5 text-xs bg-white border border-slate-300 rounded-lg text-slate-900"
-              />
-            </div>
+          {isChip ? (
+            /* Chip Category: only Chip number (necessary) and ID number */
+            <div className="space-y-3.5 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded-lg text-2xs font-medium">
+                Chip Configuration: Only <strong>Chip Number</strong> is necessary. <strong>ID Number</strong> is optional.
+              </div>
 
-            <div>
-              <label className="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                Asset Tag Barcode
-              </label>
-              <input
-                type="text"
-                value={assetTag}
-                onChange={(e) => setAssetTag(e.target.value)}
-                placeholder="AST-10293"
-                className="w-full py-1.5 px-2.5 text-xs bg-white border border-slate-300 rounded-lg font-mono uppercase text-slate-900"
-              />
-            </div>
-          </div>
+              <div>
+                <label className="block text-2xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Chip Number <span className="text-rose-600">* (Necessary)</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={serialNumber}
+                  onChange={(e) => setSerialNumber(e.target.value)}
+                  placeholder="e.g. YUBI-5NFC-901 or CHIP-88402"
+                  className="w-full py-2 px-3 text-xs bg-white border border-slate-300 rounded-lg font-mono uppercase text-slate-900 font-bold"
+                  autoFocus
+                />
+              </div>
 
-          <div>
-            <label className="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-              Serial Number (sn) *
-            </label>
-            <input
-              type="text"
-              required
-              value={serialNumber}
-              onChange={(e) => setSerialNumber(e.target.value)}
-              placeholder="e.g. IIY-034K89, PW0QRQB8, F17K9921DN"
-              className="w-full py-1.5 px-2.5 text-xs bg-white border border-slate-300 rounded-lg font-mono uppercase text-slate-900 font-semibold"
-            />
-          </div>
+              <div>
+                <label className="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                  ID Number (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={assetTag}
+                  onChange={(e) => setAssetTag(e.target.value)}
+                  placeholder="e.g. ID-90124 or AST-CHP-8001"
+                  className="w-full py-2 px-3 text-xs bg-white border border-slate-300 rounded-lg font-mono uppercase text-slate-900"
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Model Name &amp; Spec *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    placeholder="e.g. ProLite XUB2792UHSU, ThinkPad T14s"
+                    className="w-full py-1.5 px-2.5 text-xs bg-white border border-slate-300 rounded-lg text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Asset Tag Barcode
+                  </label>
+                  <input
+                    type="text"
+                    value={assetTag}
+                    onChange={(e) => setAssetTag(e.target.value)}
+                    placeholder="AST-10293"
+                    className="w-full py-1.5 px-2.5 text-xs bg-white border border-slate-300 rounded-lg font-mono uppercase text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                  Serial Number (sn) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={serialNumber}
+                  onChange={(e) => setSerialNumber(e.target.value)}
+                  placeholder="e.g. IIY-034K89, PW0QRQB8, F17K9921DN"
+                  className="w-full py-1.5 px-2.5 text-xs bg-white border border-slate-300 rounded-lg font-mono uppercase text-slate-900 font-semibold"
+                />
+              </div>
+            </>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

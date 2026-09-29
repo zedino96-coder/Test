@@ -14,7 +14,9 @@ import {
   History,
   SlidersHorizontal,
   ShieldCheck,
-  Phone
+  Phone,
+  Factory,
+  LayoutDashboard
 } from 'lucide-react';
 import { Asset, User, CategoryStockSummary, AssetHistoryEvent } from '../types/inventory';
 import { 
@@ -28,14 +30,15 @@ import {
 } from '../utils/export';
 
 interface HeaderProps {
-  activeTab: 'overview' | 'equipment' | 'users_manage' | 'phones' | 'inventory' | 'history';
-  setActiveTab: (tab: 'overview' | 'equipment' | 'users_manage' | 'phones' | 'inventory' | 'history') => void;
+  activeTab: 'overview' | 'equipment' | 'production' | 'users_manage' | 'phones' | 'inventory' | 'history';
+  setActiveTab: (tab: 'overview' | 'equipment' | 'production' | 'users_manage' | 'phones' | 'inventory' | 'history') => void;
   assets: Asset[];
   users: User[];
   history: AssetHistoryEvent[];
   summaries: CategoryStockSummary[];
   categories: string[];
   brands: Record<string, string[]>;
+  productionCount?: number;
   onOpenNewAssetModal: () => void;
   onOpenUploadModal?: () => void;
   onOpenCategoryBrandModal: () => void;
@@ -51,6 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
   summaries,
   categories,
   brands,
+  productionCount,
   onOpenNewAssetModal,
   onOpenCategoryBrandModal,
   onResetSimulation,
@@ -91,13 +95,14 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('overview')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex items-center gap-1.5 ${
                 activeTab === 'overview'
                   ? 'bg-slate-100 text-slate-900 font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              Overview &amp; Stock
+              <LayoutDashboard className="w-3.5 h-3.5 text-blue-600" />
+              <span>Dashboard</span>
             </button>
             <button
               type="button"
@@ -111,6 +116,21 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Equipment</span>
               <span className="text-2xs font-mono bg-slate-200/80 text-slate-700 px-1.5 py-0.2 rounded-sm">
                 {assets.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('production')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                activeTab === 'production'
+                  ? 'bg-slate-100 text-slate-900 font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <Factory className="w-3.5 h-3.5 text-amber-600" />
+              <span>Production</span>
+              <span className="text-2xs font-mono bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-sm font-semibold">
+                {productionCount ?? 10}
               </span>
             </button>
             <button

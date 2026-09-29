@@ -1,4 +1,4 @@
-import { Asset, User, AssetHistoryEvent } from '../types/inventory';
+import { Asset, User, AssetHistoryEvent, ProductionProfile } from '../types/inventory';
 
 export const INITIAL_USERS: User[] = [
   {
@@ -460,9 +460,48 @@ export function generateInitialAssets(): { assets: Asset[]; history: AssetHistor
   // 5. HONEYWELL DEVICES (Brand: Honeywell)
   // ==========================================
   const honeywellUnits = [
-    { model: 'ScanPal EDA52 Enterprise Mobile Computer', sn: 'HON-EDA52-991', user: INITIAL_USERS[0], date: '2026-01-12' }, // John
-    { model: 'Voyager 1400g 2D Multi-Interface Scanner', sn: 'HON-VYG-1400G1', user: INITIAL_USERS[4], date: '2026-01-22' }, // Marcus
-    { model: 'Xenon Ultra 1960g High-Density Scanner', sn: 'HON-XNN-1960G1', user: INITIAL_USERS[8], date: '2026-02-10' }, // Jessica
+    { 
+      model: 'ScanPal EDA52 Enterprise Mobile Computer', 
+      sn: 'HON-EDA52-991', 
+      user: INITIAL_USERS[0], 
+      date: '2026-01-12',
+      specs: {
+        ipv6: 'fe80::e212:963e:fca6:6433',
+        ipv4: '10.190.32.34',
+        wifiMacNetwork: 'Wähle zum Ansehen ein gespeichertes Netzwerk aus',
+        wifiMacDevice: 'c4:ef:da:76:eb:13',
+        bluetoothMac: 'c4:ef:da:78:2b:13',
+        secondBleMac: 'c4:ef:da:75:ab:10',
+      }
+    }, // John
+    { 
+      model: 'Voyager 1400g 2D Multi-Interface Scanner', 
+      sn: 'HON-VYG-1400G1', 
+      user: INITIAL_USERS[4], 
+      date: '2026-01-22',
+      specs: {
+        ipv6: 'fe80::b411:821a:10cd:2201',
+        ipv4: '10.190.32.89',
+        wifiMacNetwork: 'Wähle zum Ansehen ein gespeichertes Netzwerk aus',
+        wifiMacDevice: 'c4:ef:da:88:fc:44',
+        bluetoothMac: 'c4:ef:da:88:fc:45',
+        secondBleMac: 'c4:ef:da:88:fc:46',
+      }
+    }, // Marcus
+    { 
+      model: 'Xenon Ultra 1960g High-Density Scanner', 
+      sn: 'HON-XNN-1960G1', 
+      user: INITIAL_USERS[8], 
+      date: '2026-02-10',
+      specs: {
+        ipv6: 'fe80::c199:348d:ee41:9012',
+        ipv4: '10.190.32.140',
+        wifiMacNetwork: 'Wähle zum Ansehen ein gespeichertes Netzwerk aus',
+        wifiMacDevice: 'c4:ef:da:91:aa:50',
+        bluetoothMac: 'c4:ef:da:91:aa:51',
+        secondBleMac: 'c4:ef:da:91:aa:52',
+      }
+    }, // Jessica
   ];
 
   honeywellUnits.forEach((item, index) => {
@@ -484,6 +523,7 @@ export function generateInitialAssets(): { assets: Asset[]; history: AssetHistor
       location: item.user.deskLocation,
       condition: 'Excellent',
       notes: 'Industrial grade barcode validation unit for IT inventory ops',
+      honeywellSpecs: item.specs,
       updatedAt: '2026-02-15T09:00:00Z',
     };
     assets.push(asset);
@@ -493,9 +533,42 @@ export function generateInitialAssets(): { assets: Asset[]; history: AssetHistor
 
   // 3 Honeywell scanners in stock
   const honeywellStock = [
-    { model: 'Voyager 1400g 2D USB Barcode Scanner', sn: 'HON-VYG-STK01' },
-    { model: 'Voyager 1400g 2D USB Barcode Scanner', sn: 'HON-VYG-STK02' },
-    { model: 'ScanPal EDA52 Mobile Computer 5G', sn: 'HON-EDA52-STK03' },
+    { 
+      model: 'Voyager 1400g 2D USB Barcode Scanner', 
+      sn: 'HON-VYG-STK01',
+      specs: {
+        ipv6: 'fe80::d991:214a:77ee:1102',
+        ipv4: '10.190.32.201',
+        wifiMacNetwork: 'Wähle zum Ansehen ein gespeichertes Netzwerk aus',
+        wifiMacDevice: 'c4:ef:da:aa:11:01',
+        bluetoothMac: 'c4:ef:da:aa:11:02',
+        secondBleMac: 'c4:ef:da:aa:11:03',
+      }
+    },
+    { 
+      model: 'Voyager 1400g 2D USB Barcode Scanner', 
+      sn: 'HON-VYG-STK02',
+      specs: {
+        ipv6: 'fe80::d991:214a:77ee:1104',
+        ipv4: '10.190.32.202',
+        wifiMacNetwork: 'Wähle zum Ansehen ein gespeichertes Netzwerk aus',
+        wifiMacDevice: 'c4:ef:da:aa:11:04',
+        bluetoothMac: 'c4:ef:da:aa:11:05',
+        secondBleMac: 'c4:ef:da:aa:11:06',
+      }
+    },
+    { 
+      model: 'ScanPal EDA52 Mobile Computer 5G', 
+      sn: 'HON-EDA52-STK03',
+      specs: {
+        ipv6: 'fe80::f310:449a:88bb:3319',
+        ipv4: '10.190.32.203',
+        wifiMacNetwork: 'Wähle zum Ansehen ein gespeichertes Netzwerk aus',
+        wifiMacDevice: 'c4:ef:da:bb:22:10',
+        bluetoothMac: 'c4:ef:da:bb:22:11',
+        secondBleMac: 'c4:ef:da:bb:22:12',
+      }
+    },
   ];
 
   honeywellStock.forEach((item, index) => {
@@ -517,6 +590,7 @@ export function generateInitialAssets(): { assets: Asset[]; history: AssetHistor
       location: 'Central IT Stockroom · Bay H-Scanner',
       condition: 'New',
       notes: 'Ready for warehouse & audit deployment',
+      honeywellSpecs: item.specs,
       updatedAt: '2026-02-20T10:00:00Z',
     };
     assets.push(asset);
@@ -582,6 +656,99 @@ export function generateInitialAssets(): { assets: Asset[]; history: AssetHistor
     };
     assets.push(asset);
   }
+
+  // ==========================================
+  // 7. FIXED PHONES (Cisco & Yealink VoIP)
+  // ==========================================
+  const fixedPhones = [
+    { brand: 'Cisco', model: 'IP Phone 8845 Video VoIP Gigabit', sn: 'CSC-8845-0101', user: INITIAL_USERS[0], date: '2026-01-12', loc: INITIAL_USERS[0].deskLocation },
+    { brand: 'Yealink', model: 'T54W Prime Business Desk Phone', sn: 'YEA-T54W-0102', user: INITIAL_USERS[2], date: '2026-01-18', loc: INITIAL_USERS[2].deskLocation },
+    { brand: 'Cisco', model: 'CP-7841 Multiplatform IP Phone', sn: 'CSC-7841-STK01', user: null, date: null, loc: 'Central IT Stockroom · Bay Telephony' },
+    { brand: 'Yealink', model: 'T54W Prime Business Desk Phone', sn: 'YEA-T54W-STK02', user: null, date: null, loc: 'Central IT Stockroom · Bay Telephony' },
+  ];
+
+  fixedPhones.forEach((item, index) => {
+    const asset: Asset = {
+      id: `ast-fxp-${index + 1}`,
+      category: 'Fixed Phone',
+      brand: item.brand,
+      model: item.model,
+      serialNumber: item.sn,
+      assetTag: `AST-FXP-${7000 + index + 1}`,
+      status: item.user ? 'assigned' : 'in_stock',
+      lifecycleStatus: item.user ? 'deployed' : 'in_stock',
+      assignedUserId: item.user ? item.user.id : null,
+      assignedUserName: item.user ? item.user.name : null,
+      assignedDate: item.date,
+      location: item.loc,
+      condition: 'Excellent',
+      notes: 'Corporate SIP VoIP endpoint configured with desk extension',
+      updatedAt: '2026-02-15T09:00:00Z',
+    };
+    assets.push(asset);
+  });
+
+  // ==========================================
+  // 8. CHIPS (YubiKey Security Keys & NFC Chips)
+  // ==========================================
+  const securityChips = [
+    { brand: 'Yubico', model: 'YubiKey 5 NFC Hardware Security Key', sn: 'YUBI-5NFC-901', user: INITIAL_USERS[0], date: '2026-01-12', loc: INITIAL_USERS[0].deskLocation },
+    { brand: 'NXP', model: 'Mifare DESFire EV3 High-Security Chip', sn: 'NXP-EV3-902', user: INITIAL_USERS[1], date: '2026-01-15', loc: INITIAL_USERS[1].deskLocation },
+    { brand: 'Yubico', model: 'YubiKey 5C Nano Cryptographic FIDO2 Key', sn: 'YUBI-5CN-STK01', user: null, date: null, loc: 'Central IT Stockroom · Vault Bay C' },
+    { brand: 'HID', model: 'Seos Dual-Frequency Contactless Access Chip', sn: 'HID-SEOS-STK02', user: null, date: null, loc: 'Central IT Stockroom · Vault Bay C' },
+  ];
+
+  securityChips.forEach((item, index) => {
+    const asset: Asset = {
+      id: `ast-chp-${index + 1}`,
+      category: 'Chip',
+      brand: item.brand,
+      model: item.model,
+      serialNumber: item.sn,
+      assetTag: `AST-CHP-${8000 + index + 1}`,
+      status: item.user ? 'assigned' : 'in_stock',
+      lifecycleStatus: item.user ? 'deployed' : 'in_stock',
+      assignedUserId: item.user ? item.user.id : null,
+      assignedUserName: item.user ? item.user.name : null,
+      assignedDate: item.date,
+      location: item.loc,
+      condition: 'New',
+      notes: 'Hardware cryptographic security token for 2FA and physical security badge',
+      updatedAt: '2026-02-15T09:00:00Z',
+    };
+    assets.push(asset);
+  });
+
+  // ==========================================
+  // 9. OTHER (Docking Stations & Label Printers)
+  // ==========================================
+  const otherAssets = [
+    { brand: 'Lenovo', model: 'ThinkPad Universal Thunderbolt 4 Dock 40B0', sn: 'LEN-TB4-4401', user: INITIAL_USERS[0], date: '2026-01-12', loc: INITIAL_USERS[0].deskLocation },
+    { brand: 'Zebra', model: 'ZD421 Industrial 300dpi Barcode Label Printer', sn: 'ZBR-ZD421-4402', user: INITIAL_USERS[4], date: '2026-01-22', loc: INITIAL_USERS[4].deskLocation },
+    { brand: 'Lenovo', model: 'ThinkPad Universal USB-C Smart Dock', sn: 'LEN-SMD-STK01', user: null, date: null, loc: 'Central IT Stockroom · Bay Accessories' },
+    { brand: 'APC', model: 'Smart-UPS 1500VA Rackmount Battery Backup', sn: 'APC-1500-STK02', user: null, date: null, loc: 'Central IT Stockroom · Bay Power' },
+  ];
+
+  otherAssets.forEach((item, index) => {
+    const asset: Asset = {
+      id: `ast-oth-${index + 1}`,
+      category: 'Other',
+      brand: item.brand,
+      model: item.model,
+      serialNumber: item.sn,
+      assetTag: `AST-OTH-${9000 + index + 1}`,
+      status: item.user ? 'assigned' : 'in_stock',
+      lifecycleStatus: item.user ? 'deployed' : 'in_stock',
+      assignedUserId: item.user ? item.user.id : null,
+      assignedUserName: item.user ? item.user.name : null,
+      assignedDate: item.date,
+      location: item.loc,
+      condition: 'Excellent',
+      notes: 'Ancillary enterprise hardware unit',
+      updatedAt: '2026-02-15T09:00:00Z',
+    };
+    assets.push(asset);
+  });
 
   // ==========================================
   // HISTORICAL PAST HANDOVERS (Demonstrating past history & editable records)
@@ -651,3 +818,116 @@ export function generateInitialAssets(): { assets: Asset[]; history: AssetHistor
 
   return { assets, history };
 }
+
+export const INITIAL_PRODUCTION_PROFILES: ProductionProfile[] = [
+  {
+    id: 'prod-line-01',
+    lineName: 'Line 1 · SMT High-Speed Assembly',
+    sapName: 'SAP-PL-SMT01',
+    ip: '10.190.40.11',
+    equipmentAssigned: ['HON-EDA52-991'],
+    status: 'active',
+    location: 'Building A · Floor 1 · Bay 1',
+    notes: 'Main surface-mount assembly line for high-density compute boards',
+    updatedAt: '2026-02-15T08:00:00Z',
+  },
+  {
+    id: 'prod-line-02',
+    lineName: 'Line 2 · Through-Hole Component Insertion',
+    sapName: 'SAP-PL-THP02',
+    ip: '10.190.40.12',
+    equipmentAssigned: ['HON-VYG-1400G1'],
+    status: 'active',
+    location: 'Building A · Floor 1 · Bay 2',
+    notes: 'Heavy transformer and capacitor insertion cell with automated optical check',
+    updatedAt: '2026-02-15T08:15:00Z',
+  },
+  {
+    id: 'prod-line-03',
+    lineName: 'Line 3 · Wave Soldering & AOI Inspection',
+    sapName: 'SAP-PL-WAV03',
+    ip: '10.190.40.13',
+    equipmentAssigned: ['HON-XNN-1960G1'],
+    status: 'active',
+    location: 'Building A · Floor 1 · Bay 3',
+    notes: 'Nitrogen-tunnel selective wave soldering with post-solder AOI barcode scan',
+    updatedAt: '2026-02-15T08:30:00Z',
+  },
+  {
+    id: 'prod-line-04',
+    lineName: 'Line 4 · Final Enclosure & Fastening Cell',
+    sapName: 'SAP-PL-ENC04',
+    ip: '10.190.40.14',
+    equipmentAssigned: ['HON-VYG-STK01'],
+    status: 'active',
+    location: 'Building A · Floor 2 · Assembly Bay',
+    notes: 'Precision torque screwdriving and chassis assembly verification',
+    updatedAt: '2026-02-15T09:00:00Z',
+  },
+  {
+    id: 'prod-line-05',
+    lineName: 'Line 5 · Functional Board Testing (FCT)',
+    sapName: 'SAP-PL-FCT05',
+    ip: '10.190.40.15',
+    equipmentAssigned: ['HON-EDA52-STK03'],
+    status: 'active',
+    location: 'Building A · Floor 2 · QA Lab',
+    notes: 'Automated bed-of-nails and firmware flashing test bed',
+    updatedAt: '2026-02-15T09:30:00Z',
+  },
+  {
+    id: 'prod-line-06',
+    lineName: 'Line 6 · Laser Marking & Barcode Verification',
+    sapName: 'SAP-PL-LSR06',
+    ip: '10.190.40.16',
+    equipmentAssigned: ['HON-VYG-STK02'],
+    status: 'active',
+    location: 'Building B · Floor 1 · Packaging',
+    notes: 'Direct part marking (DPM) and GS1 DataMatrix code serialization',
+    updatedAt: '2026-02-15T10:00:00Z',
+  },
+  {
+    id: 'prod-line-07',
+    lineName: 'Line 7 · Cleanroom Packaging & Sealing',
+    sapName: 'SAP-PL-CLN07',
+    ip: '10.190.40.17',
+    equipmentAssigned: ['HON-EDA52-991'],
+    status: 'standby',
+    location: 'Building B · Cleanroom Area',
+    notes: 'ISO Class 7 sterile blister packing and ESD pouch vacuum sealing',
+    updatedAt: '2026-02-15T10:30:00Z',
+  },
+  {
+    id: 'prod-line-08',
+    lineName: 'Line 8 · High-Pot & Safety Isolation Testing',
+    sapName: 'SAP-PL-HPT08',
+    ip: '10.190.40.18',
+    equipmentAssigned: ['HON-XNN-1960G1'],
+    status: 'active',
+    location: 'Building B · High-Voltage Test Bay',
+    notes: 'Dielectric withstand and ground continuity safety validation',
+    updatedAt: '2026-02-15T11:00:00Z',
+  },
+  {
+    id: 'prod-line-09',
+    lineName: 'Line 9 · Palletizing & Logistics Intake',
+    sapName: 'SAP-PL-PLT09',
+    ip: '10.190.40.19',
+    equipmentAssigned: ['HON-EDA52-STK03'],
+    status: 'active',
+    location: 'Warehouse · Logistics Bay 1',
+    notes: 'Robotic pallet stacking and shipping label scan-to-manifest',
+    updatedAt: '2026-02-15T11:30:00Z',
+  },
+  {
+    id: 'prod-line-10',
+    lineName: 'Line 10 · Prototype & R&D Pilot Line',
+    sapName: 'SAP-PL-RND10',
+    ip: '10.190.40.20',
+    equipmentAssigned: ['HON-VYG-STK01'],
+    status: 'maintenance',
+    location: 'Building A · R&D Tech Wing',
+    notes: 'Flexible rapid-prototyping line for new product introduction (NPI)',
+    updatedAt: '2026-02-15T12:00:00Z',
+  },
+];

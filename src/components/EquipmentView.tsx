@@ -22,22 +22,28 @@ import {
   Layers,
   Tag,
   ExternalLink,
-  SlidersHorizontal
+  SlidersHorizontal,
+  PhoneCall,
+  Cpu,
+  Box
 } from 'lucide-react';
 import { 
   Asset, 
   User, 
   AssetCategory, 
   CategoryStockSummary, 
-  ASSET_CATEGORIES 
+  ASSET_CATEGORIES,
+  AssetHistoryEvent
 } from '../types/inventory';
 import { exportEquipmentCSV } from '../utils/export';
+import { EquipmentDetailModal } from './EquipmentDetailModal';
 
 interface EquipmentViewProps {
   assets: Asset[];
   users: User[];
   categories: string[];
   summaries: CategoryStockSummary[];
+  history: AssetHistoryEvent[];
   onOpenUserModal: (user: User) => void;
   onOpenAssignModal: (category?: string, userId?: string, assetId?: string) => void;
   onOpenDeviceHistory: (asset: Asset) => void;
@@ -45,6 +51,7 @@ interface EquipmentViewProps {
   onOpenNewAssetModal: () => void;
   onRequestReturn: (asset: Asset, user: User) => void;
   onOpenCategoryBrandModal: () => void;
+  onUpdateAsset?: (asset: Asset) => void;
 }
 
 export const EquipmentView: React.FC<EquipmentViewProps> = ({
@@ -52,6 +59,7 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
   users,
   categories,
   summaries,
+  history,
   onOpenUserModal,
   onOpenAssignModal,
   onOpenDeviceHistory,
@@ -59,12 +67,14 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
   onOpenNewAssetModal,
   onRequestReturn,
   onOpenCategoryBrandModal,
+  onUpdateAsset,
 }) => {
   // Filter states: lists ALL by default!
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'assigned' | 'in_stock' | 'maintenance' | 'retired'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedSn, setCopiedSn] = useState<string | null>(null);
+  const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<Asset | null>(null);
 
   const handleCopySn = (sn: string) => {
     navigator.clipboard.writeText(sn);
@@ -78,8 +88,11 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
     if (catLower.includes('monitor') || catLower.includes('display')) return <Monitor className="w-4 h-4 text-indigo-600" />;
     if (catLower.includes('keyboard') || catLower.includes('mouse')) return <Mouse className="w-4 h-4 text-emerald-600" />;
     if (catLower.includes('headset') || catLower.includes('audio')) return <Headphones className="w-4 h-4 text-violet-600" />;
+    if (catLower.includes('fixed phone') || catLower.includes('desk phone') || catLower.includes('voip')) return <PhoneCall className="w-4 h-4 text-cyan-600" />;
     if (catLower.includes('phone') || catLower.includes('mobile')) return <Smartphone className="w-4 h-4 text-cyan-600" />;
+    if (catLower.includes('chip') || catLower.includes('token') || catLower.includes('yubi') || catLower.includes('nfc')) return <Cpu className="w-4 h-4 text-emerald-600" />;
     if (catLower.includes('scanner') || catLower.includes('honeywell')) return <Scan className="w-4 h-4 text-amber-600" />;
+    if (catLower.includes('other') || catLower.includes('dock') || catLower.includes('printer')) return <Box className="w-4 h-4 text-slate-600" />;
     return <Layers className="w-4 h-4 text-slate-600" />;
   };
 
@@ -415,12 +428,21 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-100/50 text-slate-700 font-semibold">
                   <th className="py-2.5 px-4">Category &amp; Brand</th>
-                  <th className="py-2.5 px-3">Model</th>
-                  <th className="py-2.5 px-3 font-mono">Serial No. (sn)</th>
+                  {selectedCategory === 'Chip' ? (
+                    <>
+                      <th className="py-2.5 px-3 font-mono text-emerald-800 font-bold">Chip Number (Necessary)</th>
+                      <th className="py-2.5 px-3 font-mono">ID Number</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="py-2.5 px-3">Model</th>
+                      <th className="py-2.5 px-3 font-mono">Serial No. (sn)</th>
+                    </>
+                  )}
                   <th className="py-2.5 px-3">Status</th>
                   <th className="py-2.5 px-4">Assigned To</th>
                   <th className="py-2.5 px-3">Location</th>
-                  <th className="py-2.5 px-3">Condition</th>
+                  {selectedCategory !== 'Chip' && <th className="py-2.5 px-3">Condition</th>}
                   <th className="py-2.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -428,11 +450,14 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
                 {filteredAssets.map((asset) => {
                   const user = users.find((u) => u.id === asset.assignedUserId);
                   const isCopied = copiedSn === asset.serialNumber;
+                  const isChipAsset = asset.category.toLowerCase().includes('chip');
 
                   return (
                     <tr 
                       key={asset.id} 
-                      className="hover:bg-slate-50 transition-colors group"
+                      onClick={() => setSelectedAssetForDetail(asset)}
+                      className="hover:bg-blue-50/40 transition-colors group cursor-pointer"
+                      title="Click to open complete equipment card and network specifications"
                     >
                       {/* Category & Brand */}
                       <td className="py-2.5 px-4">
@@ -446,41 +471,85 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
                               <span className="text-3xs font-mono font-medium bg-slate-100 text-slate-600 px-1 py-0.2 rounded">
                                 {asset.brand}
                               </span>
+                              {(asset.category.toLowerCase().includes('honeywell') || asset.brand.toLowerCase() === 'honeywell' || asset.honeywellSpecs) && (
+                                <span className="text-3xs font-bold font-mono bg-amber-100 text-amber-800 px-1 py-0.2 rounded border border-amber-200">
+                                  Honeywell
+                                </span>
+                              )}
                             </div>
                             {asset.assetTag && (
                               <span className="text-3xs font-mono text-slate-400">
-                                {asset.assetTag}
+                                {isChipAsset ? `ID: ${asset.assetTag}` : asset.assetTag}
                               </span>
                             )}
                           </div>
                         </div>
                       </td>
 
-                      {/* Model */}
-                      <td className="py-2.5 px-3 font-medium text-slate-800">
-                        {asset.model}
-                      </td>
+                      {/* If viewing Chip category view */}
+                      {selectedCategory === 'Chip' ? (
+                        <>
+                          {/* Chip Number (Necessary) */}
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-xs font-bold text-emerald-950 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                                {asset.serialNumber}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopySn(asset.serialNumber);
+                                }}
+                                className="p-1 text-slate-400 hover:text-slate-700 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Copy Chip Number"
+                              >
+                                {isCopied ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          </td>
 
-                      {/* Serial Number (sn) */}
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-xs font-semibold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
-                            {asset.serialNumber}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleCopySn(asset.serialNumber)}
-                            className="p-1 text-slate-400 hover:text-slate-700 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Copy Serial Number"
-                          >
-                            {isCopied ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
+                          {/* ID Number */}
+                          <td className="py-2.5 px-3 font-mono text-2xs text-slate-700 font-semibold">
+                            {asset.assetTag}
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          {/* Model */}
+                          <td className="py-2.5 px-3 font-medium text-slate-800">
+                            {asset.model}
+                          </td>
+
+                          {/* Serial Number (sn) */}
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-xs font-semibold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
+                                {isChipAsset ? `Chip: ${asset.serialNumber}` : asset.serialNumber}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopySn(asset.serialNumber);
+                                }}
+                                className="p-1 text-slate-400 hover:text-slate-700 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Copy Serial Number"
+                              >
+                                {isCopied ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </>
+                      )}
 
                       {/* Status */}
                       <td className="py-2.5 px-3">
@@ -506,8 +575,12 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
                         {user ? (
                           <button
                             type="button"
-                            onClick={() => onOpenUserModal(user)}
-                            className="flex items-center gap-2 hover:text-blue-600 text-left group/user"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenUserModal(user);
+                            }}
+                            className="flex items-center gap-2 hover:text-blue-600 text-left group/user cursor-pointer"
+                            title={`Open ${user.name} dossier`}
                           >
                             <div 
                               className="w-5 h-5 rounded-full flex items-center justify-center text-white text-3xs font-bold shrink-0"
@@ -541,10 +614,25 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
                       {/* Actions */}
                       <td className="py-2.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAssetForDetail(asset);
+                            }}
+                            className="px-2 py-1 text-2xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded transition-colors shadow-2xs"
+                            title="Open Equipment Dossier & Specs Card"
+                          >
+                            Card
+                          </button>
+
                           {asset.status === 'in_stock' ? (
                             <button
                               type="button"
-                              onClick={() => onOpenAssignModal(asset.category, undefined, asset.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenAssignModal(asset.category, undefined, asset.id);
+                              }}
                               className="px-2.5 py-1 text-2xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded transition-colors"
                             >
                               Assign
@@ -552,7 +640,10 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
                           ) : user ? (
                             <button
                               type="button"
-                              onClick={() => onRequestReturn(asset, user)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRequestReturn(asset, user);
+                              }}
                               className="px-2.5 py-1 text-2xs font-medium text-slate-600 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors"
                               title="Return device to Central IT Stockroom"
                             >
@@ -562,7 +653,10 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
 
                           <button
                             type="button"
-                            onClick={() => onOpenDeviceHistory(asset)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenDeviceHistory(asset);
+                            }}
                             className="p-1 text-slate-400 hover:text-slate-800 rounded transition-colors"
                             title="View device lifecycle audit log"
                           >
@@ -578,6 +672,24 @@ export const EquipmentView: React.FC<EquipmentViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Equipment Detail Modal Card */}
+      {selectedAssetForDetail && (
+        <EquipmentDetailModal
+          asset={selectedAssetForDetail}
+          users={users}
+          history={history}
+          onClose={() => setSelectedAssetForDetail(null)}
+          onOpenUserModal={onOpenUserModal}
+          onOpenAssignModal={onOpenAssignModal}
+          onRequestReturn={onRequestReturn}
+          onUpdateAsset={(updated) => {
+            if (onUpdateAsset) onUpdateAsset(updated);
+            setSelectedAssetForDetail(updated);
+          }}
+          onOpenDeviceHistory={onOpenDeviceHistory}
+        />
+      )}
 
     </div>
   );

@@ -14,7 +14,22 @@ import {
   History, 
   Laptop, 
   Calendar,
-  Edit3
+  Edit3,
+  Layers,
+  Monitor,
+  Mouse,
+  Headphones,
+  Smartphone,
+  Scan,
+  ShieldCheck,
+  User as UserIcon,
+  Tag,
+  Network,
+  ExternalLink,
+  Plus,
+  PhoneCall,
+  Cpu,
+  Box
 } from 'lucide-react';
 import { Asset, User, AssetHistoryEvent } from '../types/inventory';
 import { exportUserEquipmentSlipCSV } from '../utils/export';
@@ -30,6 +45,7 @@ interface UserAssetCardModalProps {
   onRequestReturn?: (asset: Asset, user: User) => void;
   onOpenAssignModal: (category?: string, userId?: string) => void;
   onOpenEditEvent?: (event: AssetHistoryEvent) => void;
+  onOpenEquipmentModal?: (asset: Asset) => void;
 }
 
 export const UserAssetCardModal: React.FC<UserAssetCardModalProps> = ({
@@ -43,9 +59,12 @@ export const UserAssetCardModal: React.FC<UserAssetCardModalProps> = ({
   onRequestReturn,
   onOpenAssignModal,
   onOpenEditEvent,
+  onOpenEquipmentModal,
 }) => {
-  const [activeTab, setActiveTab] = useState<'slip' | 'history'>('slip');
+  // 3 Primary Tabs as requested: "all", "user info", "equipment assigned"
+  const [activeTab, setActiveTab] = useState<'all' | 'user_info' | 'equipment_assigned'>('all');
   const [copied, setCopied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -79,6 +98,12 @@ export const UserAssetCardModal: React.FC<UserAssetCardModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleCopyText = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 1800);
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -91,11 +116,25 @@ export const UserAssetCardModal: React.FC<UserAssetCardModalProps> = ({
     }
   };
 
+  const getCategoryIcon = (category: string) => {
+    const catLower = category.toLowerCase();
+    if (catLower.includes('laptop') || catLower.includes('notebook')) return <Laptop className="w-4 h-4 text-blue-600" />;
+    if (catLower.includes('monitor') || catLower.includes('display')) return <Monitor className="w-4 h-4 text-indigo-600" />;
+    if (catLower.includes('keyboard') || catLower.includes('mouse')) return <Mouse className="w-4 h-4 text-emerald-600" />;
+    if (catLower.includes('headset') || catLower.includes('audio')) return <Headphones className="w-4 h-4 text-violet-600" />;
+    if (catLower.includes('fixed phone') || catLower.includes('desk phone') || catLower.includes('voip')) return <PhoneCall className="w-4 h-4 text-cyan-600" />;
+    if (catLower.includes('phone') || catLower.includes('mobile')) return <Smartphone className="w-4 h-4 text-cyan-600" />;
+    if (catLower.includes('chip') || catLower.includes('token') || catLower.includes('yubi') || catLower.includes('nfc')) return <Cpu className="w-4 h-4 text-emerald-600" />;
+    if (catLower.includes('scanner') || catLower.includes('honeywell')) return <Scan className="w-4 h-4 text-amber-600" />;
+    if (catLower.includes('other') || catLower.includes('dock') || catLower.includes('printer')) return <Box className="w-4 h-4 text-slate-600" />;
+    return <Layers className="w-4 h-4 text-slate-600" />;
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden text-slate-900">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-3xl w-full overflow-hidden text-slate-900 flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95">
         
-        {/* Top Control Bar */}
+        {/* Top Control Bar with Quick Switcher */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -154,12 +193,12 @@ export const UserAssetCardModal: React.FC<UserAssetCardModalProps> = ({
           </div>
         </div>
 
-        {/* User Dossier Header with Phone and Email fields */}
+        {/* User Dossier Profile Header */}
         <div className="px-6 py-4 border-b border-slate-200 bg-white">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div 
-                className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-xs shrink-0"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white text-base font-bold shadow-xs shrink-0"
                 style={{ backgroundColor: user.avatarColor }}
               >
                 {user.name.split(' ').map((n) => n[0]).join('')}
@@ -181,7 +220,11 @@ export const UserAssetCardModal: React.FC<UserAssetCardModalProps> = ({
               </div>
               <div className="flex items-center sm:justify-end gap-1.5 text-slate-900 font-mono text-2xs font-semibold">
                 <Phone className="w-3 h-3 text-blue-600" />
-                <span className="select-all">{user.phone || 'No phone recorded'}</span>
+                {user.phone ? (
+                  <span className="select-all">{user.phone}</span>
+                ) : (
+                  <span className="text-slate-400 font-sans italic font-normal">No number assigned</span>
+                )}
               </div>
               <div className="flex items-center sm:justify-end gap-1.5 text-slate-500 text-2xs">
                 <MapPin className="w-3 h-3 text-slate-400" />
@@ -190,325 +233,498 @@ export const UserAssetCardModal: React.FC<UserAssetCardModalProps> = ({
             </div>
           </div>
 
-          {/* Subtabs: Current Slip vs. Handover History */}
+          {/* Three Primary Tabs requested by user: All, User Info, Equipment Assigned */}
           <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100">
             <button
               type="button"
-              onClick={() => setActiveTab('slip')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                activeTab === 'slip'
-                  ? 'bg-slate-900 text-white'
+              onClick={() => setActiveTab('all')}
+              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${
+                activeTab === 'all'
+                  ? 'bg-slate-900 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              Current Active Equipment ({assignedAssets.length})
+              <Layers className="w-3.5 h-3.5" />
+              <span>All</span>
             </button>
+
             <button
               type="button"
-              onClick={() => setActiveTab('history')}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
-                activeTab === 'history'
-                  ? 'bg-slate-900 text-white'
+              onClick={() => setActiveTab('user_info')}
+              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${
+                activeTab === 'user_info'
+                  ? 'bg-slate-900 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <History className="w-3.5 h-3.5" />
-              <span>Handover &amp; Return History ({userHistory.length})</span>
+              <UserIcon className="w-3.5 h-3.5" />
+              <span>User Info</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('equipment_assigned')}
+              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${
+                activeTab === 'equipment_assigned'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Laptop className="w-3.5 h-3.5" />
+              <span>Equipment Assigned ({assignedAssets.length})</span>
             </button>
           </div>
         </div>
 
-        {/* Tab 1: Current Active Equipment Slip (Photo layout) */}
-        {activeTab === 'slip' && (
-          <div id="printable-handover-slip" className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Equipment &amp; Serial Number Allocation
-              </h3>
-              <span className="text-xs text-slate-500">
-                {assignedAssets.length} hardware units currently deployed
-              </span>
-            </div>
+        {/* Modal Scrollable Body */}
+        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
 
-            <div className="border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-100 border-b border-slate-300 text-slate-800 text-xs font-semibold">
-                    <th className="py-2.5 px-4 border-r border-slate-300 w-48">Equipment</th>
-                    <th className="py-2.5 px-4 border-r border-slate-300 font-mono">sn</th>
-                    <th className="py-2.5 px-4 hidden sm:table-cell">Brand &amp; Specification</th>
-                    <th className="py-2.5 px-4 text-right w-24">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 text-xs">
-                  
-                  {/* Headset (Jabra 89780115 for John) */}
-                  {headset && (
-                    <tr className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">
-                        <span className="text-blue-600">{headset.brand}</span> (Headset)
-                      </td>
-                      <td className="py-2.5 px-4 font-mono font-medium text-slate-900 border-r border-slate-200 bg-slate-50/50">
-                        <span className="select-all">{headset.serialNumber}</span>
-                      </td>
-                      <td className="py-2.5 px-4 text-slate-600 hidden sm:table-cell">
-                        {headset.model}
-                      </td>
-                      <td className="py-2.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleTriggerReturn(headset)}
-                          className="text-2xs font-medium text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded transition-colors"
-                          title="Confirm return of headset to Central Stock"
-                        >
-                          Return...
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-
-                  {/* Laptop (Lenovo PW0QRQB8 for John) */}
-                  {laptop && (
-                    <tr className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">
-                        <span className="text-blue-600">{laptop.brand}</span> (Laptop)
-                      </td>
-                      <td className="py-2.5 px-4 font-mono font-medium text-slate-900 border-r border-slate-200 bg-slate-50/50">
-                        <span className="select-all">{laptop.serialNumber}</span>
-                      </td>
-                      <td className="py-2.5 px-4 text-slate-600 hidden sm:table-cell">
-                        {laptop.model}
-                      </td>
-                      <td className="py-2.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleTriggerReturn(laptop)}
-                          className="text-2xs font-medium text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded transition-colors"
-                          title="Confirm return of laptop to Central Stock"
-                        >
-                          Return...
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-
-                  {/* Monitors (Brand: ONLY Iiyama, 1 or 2 per user) */}
-                  {monitors.map((mon, idx) => (
-                    <tr key={mon.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">
-                        <span className="text-blue-600">{mon.brand}</span> (Monitor #{idx + 1})
-                      </td>
-                      <td className="py-2.5 px-4 font-mono font-medium text-slate-900 border-r border-slate-200 bg-slate-50/50">
-                        <span className="select-all">{mon.serialNumber}</span>
-                      </td>
-                      <td className="py-2.5 px-4 text-slate-600 hidden sm:table-cell">
-                        {mon.model}
-                      </td>
-                      <td className="py-2.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleTriggerReturn(mon)}
-                          className="text-2xs font-medium text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded transition-colors"
-                          title="Confirm return of monitor to Central Stock"
-                        >
-                          Return...
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {/* Keyboard / Mouse (Brand: ONLY Logi) */}
-                  {km && (
-                    <tr className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">
-                        <span className="text-blue-600">{km.brand}</span> (Keyboard/Mouse)
-                      </td>
-                      <td className="py-2.5 px-4 font-mono font-medium text-slate-900 border-r border-slate-200 bg-slate-50/50">
-                        <span className="select-all">{km.serialNumber}</span>
-                      </td>
-                      <td className="py-2.5 px-4 text-slate-600 hidden sm:table-cell">
-                        {km.model}
-                      </td>
-                      <td className="py-2.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleTriggerReturn(km)}
-                          className="text-2xs font-medium text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded transition-colors"
-                          title="Confirm return of keyboard/mouse to Central Stock"
-                        >
-                          Return...
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-
-                  {/* Phone (Brand: ONLY Iphone) */}
-                  {phone && (
-                    <tr className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">
-                        <span className="text-blue-600">{phone.brand}</span> (Smartphone)
-                      </td>
-                      <td className="py-2.5 px-4 font-mono font-medium text-slate-900 border-r border-slate-200 bg-slate-50/50">
-                        <span className="select-all">{phone.serialNumber}</span>
-                      </td>
-                      <td className="py-2.5 px-4 text-slate-600 hidden sm:table-cell">
-                        {phone.model}
-                      </td>
-                      <td className="py-2.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleTriggerReturn(phone)}
-                          className="text-2xs font-medium text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded transition-colors"
-                          title="Confirm return of smartphone to Central Stock"
-                        >
-                          Return...
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-
-                  {/* Honeywell Scanner */}
-                  {scanner && (
-                    <tr className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2.5 px-4 font-semibold text-slate-900 border-r border-slate-200">
-                        <span className="text-blue-600">{scanner.brand}</span> (Scanner)
-                      </td>
-                      <td className="py-2.5 px-4 font-mono font-medium text-slate-900 border-r border-slate-200 bg-slate-50/50">
-                        <span className="select-all">{scanner.serialNumber}</span>
-                      </td>
-                      <td className="py-2.5 px-4 text-slate-600 hidden sm:table-cell">
-                        {scanner.model}
-                      </td>
-                      <td className="py-2.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleTriggerReturn(scanner)}
-                          className="text-2xs font-medium text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded transition-colors"
-                          title="Confirm return of Honeywell scanner to Central Stock"
-                        >
-                          Return...
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-
-                </tbody>
-              </table>
-            </div>
-
-            {/* Formal Sign-off for Print */}
-            <div className="mt-8 pt-6 border-t border-slate-200 text-xs text-slate-600 hidden print:block">
-              <div className="grid grid-cols-2 gap-8 pt-4">
-                <div>
-                  <p className="font-semibold text-slate-800">Employee Handover Acknowledgement:</p>
-                  <p className="text-2xs text-slate-500 mt-1">
-                    I acknowledge receipt of the IT hardware listed above.
-                  </p>
-                  <div className="mt-8 border-b border-slate-400 w-48"></div>
-                  <p className="text-2xs text-slate-500 mt-1">Signature &amp; Date ({user.phone})</p>
+          {/* ============================================================== */}
+          {/* TAB 1: ALL (Combined Complete View)                            */}
+          {/* ============================================================== */}
+          {activeTab === 'all' && (
+            <div className="space-y-6">
+              
+              {/* Quick Summary Grid */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <span className="text-2xs font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                    Deployed Hardware
+                  </span>
+                  <div className="text-xl font-bold text-slate-900">
+                    {assignedAssets.length} <span className="text-xs font-normal text-slate-500">Units</span>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold text-slate-800">IT Custodian:</p>
-                  <p className="text-2xs text-slate-500 mt-1">
-                    Entered in SysAid AssetTrack Registry.
-                  </p>
-                  <div className="mt-8 border-b border-slate-400 w-48"></div>
-                  <p className="text-2xs text-slate-500 mt-1">IT Officer Signature &amp; Date</p>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <span className="text-2xs font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                    Department Bay
+                  </span>
+                  <div className="text-xs font-bold text-slate-900 truncate">
+                    {user.department}
+                  </div>
+                  <div className="text-3xs text-slate-500 truncate">
+                    {user.deskLocation}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <span className="text-2xs font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                    Custody Records
+                  </span>
+                  <div className="text-xl font-bold text-slate-900">
+                    {userHistory.length} <span className="text-xs font-normal text-slate-500">Events</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-          </div>
-        )}
-
-        {/* Tab 2: User Handover & Return History */}
-        {activeTab === 'history' && (
-          <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Complete Handover &amp; Return Timeline for {user.name}
-              </h3>
-              <span className="text-2xs text-slate-400">
-                All records editable for retroactive corrections
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {userHistory.map((hEvt) => (
-                <div 
-                  key={hEvt.id} 
-                  className="p-3.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors shadow-2xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-900">
-                        {hEvt.date}
-                      </span>
-                      <span className={`text-2xs font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                        hEvt.eventType === 'handover'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        {hEvt.eventType === 'handover' ? 'Handover / Issued' : 'Return to Stock'}
-                      </span>
-                      {hEvt.isPastCorrection && (
-                        <span className="text-3xs text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200 font-mono">
-                          Past Edit
-                        </span>
-                      )}
-                    </div>
-
-                    {onOpenEditEvent && (
-                      <button
-                        type="button"
-                        onClick={() => onOpenEditEvent(hEvt)}
-                        className="text-2xs text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1"
-                        title="Edit past date or notes"
-                      >
-                        <Edit3 className="w-2.5 h-2.5" />
-                        <span>Edit Past</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="mt-1.5 flex items-center gap-2 text-xs">
-                    <span className="font-semibold text-slate-900">{hEvt.assetModel}</span>
-                    <span className="text-slate-400">·</span>
-                    <code className="text-2xs font-mono bg-slate-100 px-1.5 py-0.2 rounded text-slate-800 font-semibold select-all">
-                      sn: {hEvt.serialNumber}
-                    </code>
-                    <span className="text-3xs text-slate-400">({hEvt.category})</span>
-                  </div>
-
-                  <p className="text-xs text-slate-600 mt-1 font-medium">
-                    {hEvt.notes}
-                  </p>
-
-                  <div className="mt-2 text-2xs text-slate-400 pt-1.5 border-t border-slate-100 flex items-center justify-between">
-                    <span>Custodian Officer: <strong>{hEvt.custodian}</strong></span>
-                    {hEvt.conditionAtEvent && (
-                      <span>Condition: {hEvt.conditionAtEvent}</span>
-                    )}
-                  </div>
+              {/* Equipment Allocation Table */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Active Equipment Allocation
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => onOpenAssignModal(undefined, user.id)}
+                    className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Assign Device</span>
+                  </button>
                 </div>
-              ))}
 
-              {userHistory.length === 0 && (
-                <div className="py-6 text-center text-xs text-slate-400 italic">
-                  No historical handover events recorded yet for this user.
+                {assignedAssets.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 bg-slate-50 rounded-lg border border-slate-200">
+                    No hardware currently deployed to this employee.
+                  </div>
+                ) : (
+                  <div className="border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-300 bg-slate-100 text-slate-800 font-bold">
+                          <th className="py-2.5 px-3 w-1/3">Equipment</th>
+                          <th className="py-2.5 px-3 font-mono">Serial No. (sn)</th>
+                          <th className="py-2.5 px-3">Condition</th>
+                          <th className="py-2.5 px-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {assignedAssets.map((asset) => (
+                          <tr key={asset.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2.5 px-3 font-medium text-slate-900">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded bg-slate-100 flex items-center justify-center shrink-0">
+                                  {getCategoryIcon(asset.category)}
+                                </div>
+                                <div>
+                                  <span className="font-semibold block">{asset.brand} {asset.category}</span>
+                                  <span className="text-3xs text-slate-500 block truncate max-w-[200px]">
+                                    {asset.model}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
+                              {asset.serialNumber}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                                {asset.condition}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {onOpenEquipmentModal && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenEquipmentModal(asset)}
+                                    className="px-2 py-1 text-2xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded"
+                                    title="View Equipment Card"
+                                  >
+                                    Inspect Card
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleTriggerReturn(asset)}
+                                  className="px-2 py-1 text-2xs font-medium text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded"
+                                >
+                                  Return
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Handover History Log in All tab */}
+              {userHistory.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                    Recent Custody Timeline
+                  </h3>
+                  <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 bg-slate-50/50">
+                    {userHistory.slice(0, 4).map((evt) => (
+                      <div key={evt.id} className="p-3 flex items-center justify-between text-xs">
+                        <div className="space-y-0.5">
+                          <span className="font-semibold text-slate-900 block capitalize">
+                            {evt.eventType.replace('_', ' ')} · {evt.assetModel}
+                          </span>
+                          <span className="text-2xs text-slate-500 font-mono block">
+                            SN: {evt.serialNumber} {evt.notes ? `· ${evt.notes}` : ''}
+                          </span>
+                        </div>
+                        <span className="text-3xs font-mono text-slate-400 shrink-0">
+                          {evt.date}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+
             </div>
-          </div>
-        )}
+          )}
+
+          {/* ============================================================== */}
+          {/* TAB 2: USER INFO (Dedicated Profile Dossier)                    */}
+          {/* ============================================================== */}
+          {activeTab === 'user_info' && (
+            <div className="space-y-6">
+              
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                  Employee Identity &amp; Contact Records
+                </h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-1">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 block">
+                      Full Legal / Corporate Name
+                    </span>
+                    <p className="font-bold text-slate-900 text-sm">{user.name}</p>
+                    <p className="text-2xs text-slate-500">Corporate Employee ID: {user.id}</p>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-1">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 block">
+                      Corporate Work Email
+                    </span>
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="font-mono text-xs text-slate-900 font-medium truncate select-all">{user.email}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyText(user.email, 'email')}
+                        className="p-1 text-slate-400 hover:text-slate-800"
+                        title="Copy email"
+                      >
+                        {copiedKey === 'email' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                    <p className="text-2xs text-slate-400">Primary single sign-on identifier</p>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-1">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 block">
+                      Direct Phone Number
+                    </span>
+                    {user.phone ? (
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="font-mono text-xs text-slate-900 font-bold select-all">{user.phone}</p>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(user.phone!, 'phone')}
+                          className="p-1 text-slate-400 hover:text-slate-800"
+                          title="Copy phone"
+                        >
+                          {copiedKey === 'phone' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic">No direct number assigned</p>
+                    )}
+                    <p className="text-2xs text-slate-400">Mobile or desk extension</p>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-1">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 block">
+                      Department &amp; Job Title
+                    </span>
+                    <p className="font-bold text-slate-900">{user.role}</p>
+                    <p className="text-2xs text-slate-500">Department: {user.department}</p>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-1">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 block">
+                      Allocated Desk Location
+                    </span>
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{user.deskLocation}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-1">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 block">
+                      Tenure &amp; Onboarding Date
+                    </span>
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{user.joinedDate || '2023-01-01'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {user.notes && (
+                  <div className="mt-4 p-3 bg-white rounded-lg border border-slate-200">
+                    <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      Custodian Notes / Special Allocations
+                    </span>
+                    <p className="text-xs text-slate-700 leading-relaxed">{user.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Hardware Profile Breakdown */}
+              <div className="p-4 bg-white border border-slate-200 rounded-xl">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">
+                  Assigned Hardware Summary
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {assignedAssets.map((a) => (
+                    <div key={a.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-xs">
+                      {getCategoryIcon(a.category)}
+                      <span className="font-semibold text-slate-800">{a.category}</span>
+                      <span className="font-mono text-2xs text-slate-500">({a.serialNumber})</span>
+                    </div>
+                  ))}
+                  {assignedAssets.length === 0 && (
+                    <span className="text-xs text-slate-400">No hardware active</span>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* TAB 3: EQUIPMENT ASSIGNED (Detailed Interactive Cards)          */}
+          {/* ============================================================== */}
+          {activeTab === 'equipment_assigned' && (
+            <div className="space-y-5">
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                    Assigned Hardware Devices ({assignedAssets.length})
+                  </h3>
+                  <p className="text-2xs text-slate-500">
+                    Full hardware details, serial numbers, tags, and network specs
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onOpenAssignModal(undefined, user.id)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-2xs transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Assign New Device</span>
+                </button>
+              </div>
+
+              {assignedAssets.length === 0 ? (
+                <div className="text-center py-10 px-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <Laptop className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-slate-700">No equipment assigned</p>
+                  <p className="text-2xs text-slate-400 mt-0.5">Click "Assign New Device" to issue hardware to {user.name}.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {assignedAssets.map((asset) => {
+                    const isHon = 
+                      asset.category.toLowerCase().includes('honeywell') || 
+                      asset.brand.toLowerCase() === 'honeywell' || 
+                      Boolean(asset.honeywellSpecs);
+
+                    return (
+                      <div 
+                        key={asset.id} 
+                        className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs hover:border-slate-300 transition-colors"
+                      >
+                        {/* Equipment Header */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                              {getCategoryIcon(asset.category)}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-900 text-sm">{asset.brand} {asset.model}</span>
+                                {isHon && (
+                                  <span className="text-3xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                                    Honeywell Unit
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-2xs text-slate-500">{asset.category} · Tag: {asset.assetTag}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {onOpenEquipmentModal && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onClose();
+                                  onOpenEquipmentModal(asset);
+                                }}
+                                className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
+                              >
+                                <span>Inspect Card</span>
+                                <ExternalLink className="w-3 h-3 text-slate-400" />
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleTriggerReturn(asset)}
+                              className="px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-lg transition-colors flex items-center gap-1 shadow-2xs"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Return</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Specs row */}
+                        <div className="grid grid-cols-3 gap-2 py-2 px-3 bg-slate-50 rounded-lg text-2xs mb-3">
+                          <div>
+                            <span className="text-slate-400 block font-medium">Serial Number</span>
+                            <span className="font-mono font-bold text-slate-900">{asset.serialNumber}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block font-medium">Condition</span>
+                            <span className="font-semibold text-emerald-700">{asset.condition} Grade</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block font-medium">Assigned Date</span>
+                            <span className="font-medium text-slate-800">{asset.assignedDate || 'Active'}</span>
+                          </div>
+                        </div>
+
+                        {/* SPECIAL HONEYWELL INFORMATION (If Honeywell Device) */}
+                        {isHon && (
+                          <div className="mt-3 pt-3 border-t border-slate-100">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <Network className="w-3.5 h-3.5 text-amber-600" />
+                              <span className="text-2xs font-bold uppercase tracking-wider text-amber-800">
+                                Honeywell Network &amp; MAC Specifications
+                              </span>
+                            </div>
+
+                            <div className="border border-slate-200 rounded-lg overflow-hidden text-2xs bg-white">
+                              <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 font-mono">
+                                <div className="p-2 flex items-center justify-between">
+                                  <span className="font-sans font-semibold text-slate-500">IP-Adresse (IPv6):</span>
+                                  <span className="text-slate-900 select-all truncate ml-2 font-bold">
+                                    {asset.honeywellSpecs?.ipv6 || 'fe80::e212:963e:fca6:6433'}
+                                  </span>
+                                </div>
+                                <div className="p-2 flex items-center justify-between">
+                                  <span className="font-sans font-semibold text-slate-500">IP-Adresse (IPv4):</span>
+                                  <span className="text-blue-700 select-all truncate ml-2 font-bold">
+                                    {asset.honeywellSpecs?.ipv4 || '10.190.32.34'}
+                                  </span>
+                                </div>
+                                <div className="p-2 flex items-center justify-between">
+                                  <span className="font-sans font-semibold text-slate-500">WLAN-MAC des Geräts:</span>
+                                  <span className="text-slate-900 select-all truncate ml-2 font-bold">
+                                    {asset.honeywellSpecs?.wifiMacDevice || 'c4:ef:da:76:eb:13'}
+                                  </span>
+                                </div>
+                                <div className="p-2 flex items-center justify-between">
+                                  <span className="font-sans font-semibold text-slate-500">Bluetooth-Adresse:</span>
+                                  <span className="text-slate-900 select-all truncate ml-2 font-bold">
+                                    {asset.honeywellSpecs?.bluetoothMac || 'c4:ef:da:78:2b:13'}
+                                  </span>
+                                </div>
+                                <div className="p-2 flex items-center justify-between col-span-2">
+                                  <span className="font-sans font-semibold text-slate-500">Second BLE MAC:</span>
+                                  <span className="text-slate-900 select-all truncate ml-2 font-bold">
+                                    {asset.honeywellSpecs?.secondBleMac || 'c4:ef:da:75:ab:10'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+            </div>
+          )}
+
+        </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-          <span>SysAid ITAM Equipment Protocol · Iiyama &amp; Logi Certified</span>
+        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <div className="text-2xs text-slate-500">
+            {assignedAssets.length} active hardware unit(s) deployed to <strong className="text-slate-800">{user.name}</strong>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 bg-slate-900 text-white rounded font-medium hover:bg-slate-800 transition-colors"
+            className="px-4 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-200/60 rounded-lg transition-colors"
           >
             Close
           </button>

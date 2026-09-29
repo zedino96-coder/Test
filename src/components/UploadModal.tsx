@@ -11,7 +11,7 @@ import {
   ArrowRight,
   Sparkles
 } from 'lucide-react';
-import { Asset, User, AssetCategory, ASSET_CATEGORIES } from '../types/inventory';
+import { Asset, User, AssetCategory, ASSET_CATEGORIES, HoneywellDeviceSpecs } from '../types/inventory';
 import { downloadUploadTemplateCSV, downloadCategoryUploadTemplateCSV, parseCSVText } from '../utils/export';
 
 interface UploadModalProps {
@@ -39,6 +39,7 @@ interface ParsedItem {
   isValid: boolean;
   validationError?: string;
   isDuplicateSn?: boolean;
+  honeywellSpecs?: HoneywellDeviceSpecs;
 }
 
 export const UploadModal: React.FC<UploadModalProps> = ({
@@ -184,6 +185,18 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
           const assignedDateRaw = row['assigneddate'] || row['assigndate'] || row['date'] || '';
 
+          let honeywellSpecs: HoneywellDeviceSpecs | undefined;
+          if (category === 'Honeywell Scanner' || brand.toLowerCase() === 'honeywell') {
+            honeywellSpecs = {
+              ipv6: row['ipv6'] || row['ipadresseipv6'] || 'fe80::e212:963e:fca6:6433',
+              ipv4: row['ipv4'] || row['ipadresseipv4'] || '10.190.32.34',
+              wifiMacNetwork: row['wlanmac'] || row['wlanmacadresse'] || 'Wähle zum Ansehen ein gespeichertes Netzwerk aus',
+              wifiMacDevice: row['devicewifimac'] || row['wlanmacadressedesgeräts'] || row['wlanmacadressedesgeraets'] || 'c4:ef:da:76:eb:13',
+              bluetoothMac: row['bluetoothmac'] || row['bluetoothadresse'] || 'c4:ef:da:78:2b:13',
+              secondBleMac: row['secondblemac'] || row['secondblemacaddress'] || 'c4:ef:da:75:ab:10',
+            };
+          }
+
           return {
             raw: row,
             category,
@@ -200,6 +213,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             isValid,
             validationError,
             isDuplicateSn: isAlreadyExisting || isDuplicateInFile,
+            honeywellSpecs,
           };
         });
 
@@ -239,6 +253,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       location: item.location,
       condition: item.condition,
       notes: item.notes,
+      honeywellSpecs: item.honeywellSpecs,
       updatedAt: new Date().toISOString(),
     }));
 

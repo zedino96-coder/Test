@@ -47,7 +47,7 @@ export const PhoneDirectoryView: React.FC<PhoneDirectoryViewProps> = ({
 
     return (
       u.name.toLowerCase().includes(q) ||
-      u.phone.toLowerCase().includes(q) ||
+      (u.phone ? u.phone.toLowerCase().includes(q) : false) ||
       u.department.toLowerCase().includes(q) ||
       u.role.toLowerCase().includes(q) ||
       u.email.toLowerCase().includes(q) ||
@@ -59,7 +59,7 @@ export const PhoneDirectoryView: React.FC<PhoneDirectoryViewProps> = ({
     const headers = ['Employee Name', 'Phone Number', 'Email', 'Department', 'Role', 'Desk Location'];
     const rows = filteredUsers.map((u) => [
       `"${u.name.replace(/"/g, '""')}"`,
-      `"${u.phone.replace(/"/g, '""')}"`,
+      `"${(u.phone || '').replace(/"/g, '""')}"`,
       `"${u.email.replace(/"/g, '""')}"`,
       `"${u.department.replace(/"/g, '""')}"`,
       `"${u.role.replace(/"/g, '""')}"`,
@@ -213,16 +213,16 @@ export const PhoneDirectoryView: React.FC<PhoneDirectoryViewProps> = ({
 
                     {/* Dedicated Phone Number Column */}
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 group-hover:border-blue-300 group-hover:bg-blue-50/40 transition-colors">
-                          <Phone className="w-3 h-3 text-blue-600 shrink-0" />
-                          <span className="select-all">{user.phone || 'No phone recorded'}</span>
-                        </div>
+                      {user.phone ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 group-hover:border-blue-300 group-hover:bg-blue-50/40 transition-colors">
+                            <Phone className="w-3 h-3 text-blue-600 shrink-0" />
+                            <span className="select-all">{user.phone}</span>
+                          </div>
 
-                        {user.phone && (
                           <button
                             type="button"
-                            onClick={(e) => handleCopyPhone(user.phone, e)}
+                            onClick={(e) => handleCopyPhone(user.phone!, e)}
                             className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
                             title="Copy phone number"
                           >
@@ -232,8 +232,10 @@ export const PhoneDirectoryView: React.FC<PhoneDirectoryViewProps> = ({
                               <Copy className="w-3.5 h-3.5" />
                             )}
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <span className="text-2xs text-slate-400 italic">No number assigned</span>
+                      )}
                     </td>
 
                     {/* Department */}

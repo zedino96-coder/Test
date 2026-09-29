@@ -67,7 +67,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
     return (
       u.name.toLowerCase().includes(q) ||
       u.email.toLowerCase().includes(q) ||
-      u.phone.toLowerCase().includes(q) ||
+      (u.phone ? u.phone.toLowerCase().includes(q) : false) ||
       u.role.toLowerCase().includes(q) ||
       u.deskLocation.toLowerCase().includes(q)
     );
@@ -237,15 +237,25 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                     {/* User */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-xs"
+                        <button
+                          type="button"
+                          onClick={() => onOpenUserModal(user)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-xs hover:ring-2 hover:ring-blue-500 transition-all cursor-pointer"
                           style={{ backgroundColor: user.avatarColor }}
+                          title={`View ${user.name} profile and assigned equipment`}
                         >
                           {user.name.split(' ').map((n) => n[0]).join('')}
-                        </div>
+                        </button>
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-900">{user.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => onOpenUserModal(user)}
+                              className="font-bold text-slate-900 hover:text-blue-600 hover:underline cursor-pointer text-left transition-colors"
+                              title={`View ${user.name} profile and assigned equipment`}
+                            >
+                              {user.name}
+                            </button>
                             {isJohn && (
                               <span className="text-3xs font-mono bg-blue-100 text-blue-700 px-1 py-0.2 rounded">
                                 Sample Lead
